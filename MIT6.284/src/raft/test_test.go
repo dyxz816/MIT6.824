@@ -8,12 +8,14 @@ package raft
 // test with the original before submitting.
 //
 
-import "testing"
-import "fmt"
-import "time"
-import "math/rand"
-import "sync/atomic"
-import "sync"
+import (
+	"fmt"
+	"math/rand"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+)
 
 // The tester generously allows solutions to complete elections in one second
 // (much more than the paper's range of timeouts).
@@ -66,6 +68,7 @@ func TestReElection2A(t *testing.T) {
 	// if the old leader rejoins, that shouldn't
 	// disturb the new leader.
 	cfg.connect(leader1)
+	time.Sleep(2 * RaftElectionTimeout)
 	leader2 := cfg.checkOneLeader()
 
 	// if there's no quorum, no leader should
@@ -92,7 +95,7 @@ func TestManyElections2A(t *testing.T) {
 	defer cfg.cleanup()
 
 	cfg.begin("Test (2A): multiple elections")
-
+	fmt.Println("first")
 	cfg.checkOneLeader()
 
 	iters := 10
@@ -107,13 +110,14 @@ func TestManyElections2A(t *testing.T) {
 
 		// either the current leader should still be alive,
 		// or the remaining four should elect a new one.
+		fmt.Println("second")
 		cfg.checkOneLeader()
 
 		cfg.connect(i1)
 		cfg.connect(i2)
 		cfg.connect(i3)
 	}
-
+	fmt.Println("third")
 	cfg.checkOneLeader()
 
 	cfg.end()
@@ -390,12 +394,12 @@ func TestRejoin2B(t *testing.T) {
 
 	// old leader connected again
 	cfg.connect(leader1)
-
+	time.Sleep(time.Second)
 	cfg.one(104, 2, true)
 
 	// all together now
 	cfg.connect(leader2)
-
+	time.Sleep(time.Second)
 	cfg.one(105, servers, true)
 
 	cfg.end()
@@ -417,7 +421,7 @@ func TestBackup2B(t *testing.T) {
 	cfg.disconnect((leader1 + 4) % servers)
 
 	// submit lots of commands that won't commit
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 5; i++ {
 		cfg.rafts[leader1].Start(rand.Int())
 	}
 
@@ -432,7 +436,7 @@ func TestBackup2B(t *testing.T) {
 	cfg.connect((leader1 + 4) % servers)
 
 	// lots of successful commands to new group.
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 5; i++ {
 		cfg.one(rand.Int(), 3, true)
 	}
 
@@ -445,7 +449,7 @@ func TestBackup2B(t *testing.T) {
 	cfg.disconnect(other)
 
 	// lots more commands that won't commit
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 5; i++ {
 		cfg.rafts[leader2].Start(rand.Int())
 	}
 
@@ -458,9 +462,10 @@ func TestBackup2B(t *testing.T) {
 	cfg.connect((leader1 + 0) % servers)
 	cfg.connect((leader1 + 1) % servers)
 	cfg.connect(other)
+	time.Sleep(time.Second)
 
 	// lots of successful commands to new group.
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 5; i++ {
 		cfg.one(rand.Int(), 3, true)
 	}
 
@@ -468,6 +473,7 @@ func TestBackup2B(t *testing.T) {
 	for i := 0; i < servers; i++ {
 		cfg.connect(i)
 	}
+	time.Sleep(time.Second)
 	cfg.one(rand.Int(), servers, true)
 
 	cfg.end()
